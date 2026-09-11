@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Memory Game - PNTU</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            min-height: 100vh;
+            background:
+                linear-gradient(135deg, #e8f7ff, #f5fbff);
+            color: #123;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: 0 15px 50px rgba(0, 80, 130, 0.15);
+        }
+
+        /* HEADER */
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #0077b6;
+            font-size: clamp(25px, 5vw, 40px);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #667;
+            font-size: 15px;
+        }
+
+        /* INFO */
+
+        .info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: #f0f9ff;
+            border-radius: 15px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .info-box span {
+            display: block;
+            color: #667;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .info-box strong {
+            color: #0077b6;
+            font-size: 24px;
+        }
+
+        /* MESSAGE */
+
+        .message {
+            text-align: center;
+            min-height: 30px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #0077b6;
+        }
+
+        /* BOARD */
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            max-width: 650px;
+            margin: auto;
+        }
+
+        .card {
+            aspect-ratio: 1 / 1;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card.disabled {
+            cursor: default;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.45s;
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner,
+        .card.matched .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front,
+        .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+align-items: center;
+            overflow: hidden;
+        }
+
+        /* MẶT ÚP */
+
+        .card-back {
+            background:
+                linear-gradient(135deg, #0077b6, #00a8e8);
+            color: white;
+            font-size: 38px;
+            box-shadow: 0 5px 15px rgba(0, 100, 150, 0.2);
+        }
+
+        .card-back::after {
+            content: "✚";
+            font-size: 38px;
+            opacity: 0.9;
+        }
+
+        /* MẶT HÌNH */
+
+        .card-front {
+            background: white;
+            transform: rotateY(180deg);
+            border: 3px solid #d9f1ff;
+        }
+
+        .card-front img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* MATCH */
+
+        .card.matched .card-front {
+            border-color: #21b573;
+            box-shadow: 0 0 0 3px rgba(33, 181, 115, 0.2);
+        }
+
+        /* BUTTON */
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            border: none;
+            padding: 13px 25px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .restart {
+            background: #0077b6;
+            color: white;
+        }
+
+        .restart:hover {
+            background: #005f91;
+            transform: translateY(-2px);
+        }
+
+        /* OVERLAY */
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 30, 50, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 100;
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        .result-box {
+            width: 100%;
+            max-width: 420px;
+            background: white;
+            border-radius: 25px;
+            padding: 35px 25px;
+            text-align: center;
+            animation: popup 0.35s ease;
+        }
+
+        .result-icon {
+            font-size: 65px;
+            margin-bottom: 15px;
+        }
+
+        .result-box h2 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #0077b6;
+        }
+
+        .result-box p {
+            color: #667;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .play-again {
+            background: #21b573;
+            color: white;
+        }
+
+        .play-again:hover {
+            background: #16965d;
+        }
+
+        /* INTRO */
+
+        .intro {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0077b6, #00a8e8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 200;
+        }
+.intro.hidden {
+            display: none;
+        }
+
+        .intro-box {
+            width: 100%;
+            max-width: 550px;
+            background: white;
+            padding: 35px;
+            border-radius: 25px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .intro-box .logo {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #e8f7ff;
+        }
+
+        .intro-box h2 {
+            color: #0077b6;
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .intro-box p {
+            color: #555;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .start-button {
+            background: #0077b6;
+            color: white;
+            font-size: 18px;
+            padding: 14px 35px;
+        }
+
+        .start-button:hover {
+            transform: scale(1.04);
+        }
+
+        /* COUNTDOWN */
+
+        .countdown {
+            font-size: 18px;
+            color: #0077b6;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        /* ANIMATION */
+
+        @keyframes popup {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 600px) {
+
+            body {
+                padding: 10px;
+            }
+
+            .game-container {
+                padding: 15px;
+                border-radius: 18px;
+            }
+
+            .game-board {
+                gap: 8px;
+            }
+
+            .card-back::after {
+                font-size: 25px;
+            }
+
+            .info {
+                gap: 6px;
+            }
+
+            .info-box {
+                padding: 9px 5px;
+            }
+
+            .info-box strong {
+                font-size: 20px;
+            }
+
+            .intro-box {
+                padding: 25px 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- INTRO -->
+
+    <div class="intro" id="intro">
+
+        <div class="intro-box">
+
+            <!--
+                THAY logo.png bằng logo của trường
+            -->
+
+            <img
+                src="images/logo.png"
+                class="logo"
+                alt="Logo trường"
+                onerror="this.style.display='none'"
+            >
+
+            <h2>MEMORY GAME</h2>
+
+            <p>
+                Khám phá hình ảnh
+                <strong>Trường & Khoa</strong>
+                của Đại học Y khoa Phạm Ngọc Thạch
+                thông qua trò chơi ghi nhớ!
+            </p>
+
+            <p>
+                🧠 Bạn có <strong>10 giây</strong> để ghi nhớ.<br>
+                ⏱️ Sau đó có <strong>15 giây</strong> để tìm ít nhất
+                <strong>2 cặp</strong>.
+            </p>
+
+            <button class="start-button" onclick="startGame()">
+                BẮT ĐẦU CHƠI
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- GAME -->
+
+    <main class="game-container">
+
+        <div class="header">
+
+            <h1>🧠 PNTU MEMORY GAME</h1>
+
+            <p>
+                Tìm các cặp hình ảnh giống nhau
+            </p>
+
+        </div>
+
+
+        <div class="info">
+
+            <div class="info-box">
+                <span>THỜI GIAN</span>
+                <strong id="timer">10</strong>
+            </div>
+
+            <div class="info-box">
+                <span>SỐ CẶP</span>
+                <strong id="pairs">0</strong>
+            </div>
+
+            <div class="info-box">
+                <span>MỤC TIÊU</span>
+                <strong>2</strong>
+            </div>
+
+        </div>
+
+
+        <div class="countdown" id="phase">
+            Đang chuẩn bị...
+        </div>
+
+
+        <div class="message" id="message"></div>
+
+
+        <div class="game-board" id="gameBoard"></div>
+
+
+        <div
